@@ -90,12 +90,68 @@ El modo interactivo nos permite abrir una terminal en el contenedor para ejecuta
 - docker container ls
 
 ## Ejecutar comandos dentro de un contenedor
+
 - docker container attach nos "agrega" a la entrada y salida estándar del contenedor, en términos prácticos esto significa que nos ingresa a la terminal de un contenedor ejecutándose en segundo plano. Ej: docker container attach <id-contenedor>
 - exit dentro de attach también cierra el proceso y apaga el contenedor cuando el proceso que lo mantiene disponible es la terminal
 - docker container exec nos permite ejecutar comandos directamente en la terminal. Ejemplo: docker container exec <id-contenedor> <comando> <flags>: `docker container exec f778423aac8f ls -lh``
 - La flag -i en exec nos permite abrir una entrada estándar al contenedor, sin que al finalizarlo se finalice la ejecución del proceso de entrada estándar del contenedor mismo `docker container exec -it f778423aac8f bash` (presuntamente es como abrir una nueva terminal en el contenedor de Ubuntu)
 - exit sobre la terminal abierta con exec no cierra el proceso estándar del contenedor y por tanto lo mantiene abierto.
+- docker container top <id-contenedor> enlista los procesos ejecutándose dentro de un contenedor
 
+
+## Puertos
+
+Los puertos nos permiten exponer servicios de un contenedor hacia el host.
+
+- Mapean el puerto del contenedor hacia la máquina local
+- `docker container ls -q` obtiene solos los IDs de los contenedores ejecutándose
+- docker container stop $(docker container ls -q) detiene todos los contenedores activos
+- docker container prune - Elimina todos los contenedores detenidos
+- La bandera -p del comando docker container -run, publica los puertos del contenedor al host.
+- La sintaxis de -p es <puerto-host-para-mapeo>:<puerto-del-contenedor>, ejemplo: `docker container run -d -p 3030:80 nginx`, en este caso el puerto 80 del contenedor se accede con el 3030 en el host.
+- `docker container port <id-contenedor>` Enlista los puertos mapeados del contenedor al host
+- El flag -P de docker container run delega a docker el mapeo de puertos para que asigne uno aleatorio en el host para los puertos del contenedor `docker container run -d -P nginx`, puedes saber a qué puerto mapeo con docker container port
+- `docker container ls` también contiene una columna PORT para los puertos enlistados
+- Múltiples puertos se mapean concatenando el flag -p `docker container run -d -p 3030:80 -p 2020:81 nginx`
+
+## Logs
+
+Los logs nos permiten visualizar la salida estándar o el error estándar del contenedor.
+
+- docker container logs <id-contenedor> imprime los logs del contenedor
+- Bastante útil cuando no sabemos por qué un contenedor se apagó, ya que imprime las entradas al error estándar del contenedor
+
+## Commits 
+
+Un commit es una forma de tomar a un contenedor con todos sus recursos y transformarlo en una imagen.
+
+- En términos prácticos: Si has hecho modificaciones en el contenedor, como crear archivos, instalar o desinstalar, entre otros, puedes convertir eso en una imagen para regenerar contenedores con los mismos cambios.
+- `docker container commit <id-contenedor> <nombre-imagen>`
+- El comando docker container commit genera una nueva imagen que puedes ver con `docker image ls`
+- Puedes generar un nuevo contenedor para la imagen generada con `docker container run <nombre-imagen>`
+
+
+## Volúmenes
+
+Compartir archivos entre el host y el contenedor o entre contenedores. Almacenar información sensible que no debería estar en el contenedor. Es como un espacio de archivos compartidos.
+
+- docker volume es el comando para controlar los volúmenes
+- Podemos usar drivers para configurar los volúmenes, por defecto es el disco local, pero puedes usar drivers para almacenar los archivos en cloud (AWS, Docker, etc)
+- `docker volume create` sirve para crear nuevos volúmenes
+- La bandera -d de opciones nos permite configurar el driver para el volumen
+- `docker volume create <nombre-volumen>` crea un nuevo volúmen
+- `docker volume ls` enlista los volúmenes en nuestra computadora
+- `docker volume inspect <nombre-volumen>` entrega info del volumen como fecha de creación, driver y dónde ubicarlo en el host. El path puede no encontrarse en Mac o Windows porque se ejecutan en máquinas virtuales
+- Para montar un volumen en un contenedor usamos la opcion -v al ejecutar el contenedor: `docker container run -dit -v local:/app ubuntu`
+- La sintaxis de la opción -v es <nombre-volumen>:<path-contenedor>, el path del contenedor define en qué ubicación estará el volumen.
+- Los archivos de un volumen persisten incluso aunque el contenedor haya sido eliminado.
+
+
+
+## Terminología
+- **Host**: El sistema operativo en el que se está ejecutando el contenedor
+- **Contenedor**: Instancia de una imagen que ejecutamos con Docker
 
 ## Notas importantes
 - Si un contenedor no ejecuta un proceso, se apaga automáticamente
+- Aunqueno se pueden eliminar contenedores ejecutándose, podemos usar el flag -f para forzarlo: `docker container rm -f <id-contenedor>`
